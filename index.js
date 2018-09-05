@@ -37,7 +37,7 @@ let isCollision = function(targetX, targetY){
     return false;
 };
 
-let terrain = [0,1,2,4,2,2,1,0,0,0,1,2];
+let terrain = [0,1,2,4,2,4,5,6,5,3,2,0,0,6,3,2];
 let ctx = kontra.canvas.getContext("2d");
 let scrollIndex = 0;
 let loop = kontra.gameLoop({
