@@ -1,0 +1,8 @@
+{
+  "name": "13kGame",
+  "version": "1.0.0",
+  "description": "Innovation day",
+  "devDependencies": {
+    "kontra": "^4.0.1"
+  }
+}
