@@ -39,6 +39,12 @@ let sprite = kontra.sprite({
     }
   }
 });
+
+let isCollision = function(targetX, targetY){
+
+    return false;
+};
+
 sprite.playAnimation('walk');
 let terrain = [0,1,2,4,2,2,1,0,0,0,1,2];
 let ctx = kontra.canvas.getContext("2d");
@@ -49,14 +55,20 @@ let loop = kontra.gameLoop({
     // wrap the sprites position when it reaches
     // the edge of the screen
     if (sprite.y <= (kontra.canvas.height - sprite.height)) {
-      sprite.y++;
+        if(!isCollision(sprite.x,sprite.y+1))
+        {
+            sprite.y++;
+        }
     }
   },
   render: function() {  
           // render the game state
           let index = 0;
+          var my_gradient=ctx.createLinearGradient(0,0,0,150);
+          my_gradient.addColorStop(0,"#FFFFFF");
+          my_gradient.addColorStop(1,"#00FF00");
           for (var value of terrain) {
-            ctx.fillStyle="#00FF00";
+            ctx.fillStyle=my_gradient;
             ctx.fillRect(50*index,kontra.canvas.height - 50 * value,50,50*value);
             index++;
           };
