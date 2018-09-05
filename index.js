@@ -3,7 +3,7 @@ kontra.assets.imagePath = './img/';
 kontra.assets.load('character_walk_sheet.png').then(function() {
 
     // create the sprite sheet and its animation
-    window.spriteSheet = kontra.spriteSheet({
+    let spriteSheet = kontra.spriteSheet({
       image: kontra.assets.images.character_walk_sheet,
       frameWidth: 72,
       frameHeight: 97,
@@ -15,7 +15,7 @@ kontra.assets.load('character_walk_sheet.png').then(function() {
       }
     });
 
-    window.sprite = kontra.sprite({
+let sprite = kontra.sprite({
   x: 100,        // starting x,y position of the sprite
   y: 98,
   animations: spriteSheet.animations,
@@ -39,7 +39,10 @@ kontra.assets.load('character_walk_sheet.png').then(function() {
     }
   }
 });
-window.loop = kontra.gameLoop({  // create the main game loop
+sprite.playAnimation('walk');
+let terrain = [0,1,2,4,2,2,1,0,0,0,1,2];
+let ctx = kontra.canvas.getContext("2d");
+let loop = kontra.gameLoop({
   update: function() {        // update the game state
     sprite.update();
 
@@ -49,11 +52,18 @@ window.loop = kontra.gameLoop({  // create the main game loop
       sprite.y++;
     }
   },
-  render: function() {        // render the game state
+  render: function() {  
+          // render the game state
+          let index = 0;
+          for (var value of terrain) {
+            ctx.fillStyle="#00FF00";
+            ctx.fillRect(50*index,kontra.canvas.height - 50 * value,50,50*value);
+            index++;
+          };
     sprite.render();
   }
 });
-sprite.playAnimation('walk');
+
 loop.start();    // start the game
 });
 
