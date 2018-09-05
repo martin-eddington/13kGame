@@ -1,24 +1,15 @@
 kontra.init();
 kontra.assets.imagePath = './img/';
-kontra.assets.load('character_walk_sheet.png').then(function() {
-
-    // create the sprite sheet and its animation
-    let spriteSheet = kontra.spriteSheet({
-      image: kontra.assets.images.character_walk_sheet,
-      frameWidth: 72,
-      frameHeight: 97,
-      animations: {
-        walk: {
-          frames: '0..10',  // frames 0 through 10
-          frameRate: 30
-        }
-      }
-    });
-
-let sprite = kontra.sprite({
+kontra.assets.load('block.png').then(function(){
+let block = kontra.assets.images.block;
+kontra.assets.load('boom.png').then(function(){
+let boom = kontra.assets.images.boom;
+kontra.assets.load('sanj.png').then(function() {
+    let dead = false;
+    let sprite = kontra.sprite({
   x: 0,        // starting x,y position of the sprite
   y: 249,
-  animations: spriteSheet.animations,
+  image: kontra.assets.images.sanj,
   //dx: 2,          // move the sprite 2px to the right every frame
   update: function() {
     if (kontra.keys.pressed('left')){
@@ -42,6 +33,7 @@ let sprite = kontra.sprite({
           // allow downward movement
           this.y++;
       }
+      //dead = true;
     }
   }
 });
@@ -72,14 +64,17 @@ let isCollision = function(targetX, targetY, terrain){
     return false;
 };
 
-sprite.playAnimation('walk');
 let terrain = [1,1,2,4,2,2,1,0,0,0,1,2];
 let ctx = kontra.canvas.getContext("2d");
+let scrollIndex = 0;
 let loop = kontra.gameLoop({
   update: function() {        // update the game state
     sprite.update();
-
-    // stop the sprite's position when it reaches
+    if(dead) {
+        sprite.image = boom;
+        this.stop();
+    };
+    // wrap the sprites position when it reaches
     // the edge of the screen
     if (sprite.y <= (kontra.canvas.height - sprite.height)) {
         // if(!isCollision(sprite.x, sprite.y, terrain))
@@ -90,13 +85,16 @@ let loop = kontra.gameLoop({
   },
   render: function() {
           // render the game state
+          scrollIndex = 1;
+          if(scrollIndex % 50 == 0)
+          {
+              let oldItem = terrain.shift();
+              terrain.push(oldItem);
+              scrollIndex = 0;
+          }
           let index = 0;
-          var my_gradient=ctx.createLinearGradient(0,0,0,150);
-          my_gradient.addColorStop(0,"#FFFFFF");
-          my_gradient.addColorStop(1,"#00FF00");
           for (var value of terrain) {
-            ctx.fillStyle=my_gradient;
-            ctx.fillRect(50*index,kontra.canvas.height - 50 * value,50,50*value);
+            ctx.drawImage(block,50*index - scrollIndex,kontra.canvas.height - 50 * value,50,50*value);
             index++;
           };
     sprite.render();
@@ -104,4 +102,6 @@ let loop = kontra.gameLoop({
 });
 
 loop.start();    // start the game
+});
+});
 });
