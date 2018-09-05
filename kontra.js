@@ -1,6 +1,6 @@
 /*
  * Kontra.js v4.0.1 (Custom Build on 2018-09-05) | MIT
- * Build: https://straker.github.io/kontra/download?files=gameLoop+keyboard+sprite
+ * Build: https://straker.github.io/kontra/download?files=gameLoop+keyboard+sprite+assets+spriteSheet
  */
 kontra = {
 
@@ -653,4 +653,499 @@ kontra = {
     return (new Sprite()).init(properties);
   };
   kontra.sprite.prototype = Sprite.prototype;
+})();
+
+(function() {
+  let imageRegex = /(jpeg|jpg|gif|png)$/;
+  let audioRegex = /(wav|mp3|ogg|aac)$/;
+  let noRegex = /^no$/;
+  let leadingSlash = /^\//;
+  let trailingSlash = /\/$/;
+  let assets;
+
+  // audio playability
+  // @see https://github.com/Modernizr/Modernizr/blob/master/feature-detects/audio.js
+  let audio = new Audio();
+  let canUse = {
+    wav: '',
+    mp3: audio.canPlayType('audio/mpeg;').replace(noRegex,''),
+    ogg: audio.canPlayType('audio/ogg; codecs="vorbis"').replace(noRegex,''),
+    aac: audio.canPlayType('audio/aac;').replace(noRegex,'')
+  };
+
+  /**
+   * Join a base path and asset path.
+   *
+   * @param {string} base - The asset base path.
+   * @param {string} url - The URL to the asset.
+   *
+   * @returns {string}
+   */
+  function joinPath(base, url) {
+    return [base.replace(trailingSlash, ''), base ? url.replace(leadingSlash, '') : url]
+      .filter(s => s)
+      .join('/')
+  }
+
+  /**
+   * Get the extension of an asset.
+   *
+   * @param {string} url - The URL to the asset.
+   *
+   * @returns {string}
+   */
+  function getExtension(url) {
+    return url.split('.').pop();
+  }
+
+  /**
+   * Get the name of an asset.
+   *
+   * @param {string} url - The URL to the asset.
+   *
+   * @returns {string}
+   */
+  function getName(url) {
+    let name = url.replace('.' + getExtension(url), '');
+
+    // remove leading slash if there is no folder in the path
+    // @see https://stackoverflow.com/a/50592629/2124254
+    return name.split('/').length == 2 ? name.replace(leadingSlash, '') : name;
+  }
+
+  /**
+   * Load an Image file. Uses imagePath to resolve URL.
+   * @memberOf kontra.assets
+   * @private
+   *
+   * @param {string} url - The URL to the Image file.
+   *
+   * @returns {Promise} A deferred promise. Promise resolves with the Image.
+   *
+   * @example
+   * kontra.loadImage('car.png');
+   * kontra.loadImage('autobots/truck.png');
+   */
+  function loadImage(originalUrl, url) {
+    return new Promise(function(resolve, reject) {
+      let image = new Image();
+      url = joinPath(assets.imagePath, originalUrl);
+
+      image.onload = function loadImageOnLoad() {
+        assets.images[ getName(originalUrl) ] = assets.images[url] = this;
+        resolve(this);
+      };
+
+      image.onerror = function loadImageOnError() {
+        reject(/* @if DEBUG */ 'Unable to load image ' + /* @endif */ url);
+      };
+
+      image.src = url;
+    });
+  }
+
+  /**
+   * Load an Audio file. Supports loading multiple audio formats which will be resolved by
+   * the browser in the order listed. Uses audioPath to resolve URL.
+   * @memberOf kontra.assets
+   * @private
+   *
+   * @param {string|string[]} url - The URL to the Audio file.
+   *
+   * @returns {Promise} A deferred promise. Promise resolves with the Audio.
+   *
+   * @example
+   * kontra.loadAudio('sound_effects/laser.mp3');
+   * kontra.loadAudio(['explosion.mp3', 'explosion.m4a', 'explosion.ogg']);
+   */
+  function loadAudio(originalUrl, url, undefined) {
+    return new Promise(function(resolve, reject) {
+
+      // determine which audio format the browser can play
+      originalUrl = [].concat(originalUrl).reduce(function(a, source) {
+        return canUse[ getExtension(source) ] ? source : a
+      }, undefined);
+
+      if (!originalUrl) {
+        reject(/* @if DEBUG */ 'cannot play any of the audio formats provided' + /* @endif */ originalUrl);
+      }
+      else {
+        let audio = new Audio();
+        url = joinPath(assets.audioPath, originalUrl);
+
+        audio.addEventListener('canplay', function loadAudioOnLoad() {
+          assets.audio[ getName(originalUrl) ] = assets.audio[url] = this;
+          resolve(this);
+        });
+
+        audio.onerror = function loadAudioOnError() {
+          reject(/* @if DEBUG */ 'Unable to load audio ' + /* @endif */ url);
+        };
+
+        audio.src = url;
+        audio.load();
+      }
+    });
+  }
+
+  /**
+   * Load a data file (be it text or JSON). Uses dataPath to resolve URL.
+   * @memberOf kontra.assets
+   * @private
+   *
+   * @param {string} url - The URL to the data file.
+   *
+   * @returns {Promise} A deferred promise. Resolves with the data or parsed JSON.
+   *
+   * @example
+   * kontra.loadData('bio.json');
+   * kontra.loadData('dialog.txt');
+   */
+  function loadData(originalUrl, url) {
+    url = joinPath(assets.dataPath, originalUrl);
+
+    return fetch(url).then(function(response) {
+      if (!response.ok) throw response;
+      return response.clone().json().catch(function() { return response.text() })
+    }).then(function(data) {
+      assets.data[ getName(originalUrl) ] = assets.data[url] = data;
+      return data;
+    });
+  }
+
+  /**
+   * Object for loading assets.
+   */
+  assets = kontra.assets = {
+    // all assets are stored by name as well as by URL
+    images: {},
+    audio: {},
+    data: {},
+
+    // base asset path for determining asset URLs
+    imagePath: '',
+    audioPath: '',
+    dataPath: '',
+
+    /**
+     * Load an Image, Audio, or data file.
+     * @memberOf kontra.assets
+     *
+     * @param {string|string[]} - Comma separated list of assets to load.
+     *
+     * @returns {Promise}
+     *
+     * @example
+     * kontra.loadAsset('car.png');
+     * kontra.loadAsset(['explosion.mp3', 'explosion.ogg']);
+     * kontra.loadAsset('bio.json');
+     * kontra.loadAsset('car.png', ['explosion.mp3', 'explosion.ogg'], 'bio.json');
+     */
+    load() {
+      let promises = [];
+      let url, extension, asset, i, promise;
+
+      for (i = 0; (asset = arguments[i]); i++) {
+        url = [].concat(asset)[0];
+
+        extension = getExtension(url);
+        if (extension.match(imageRegex)) {
+          promise = loadImage(asset);
+        }
+        else if (extension.match(audioRegex)) {
+          promise = loadAudio(asset);
+        }
+        else {
+          promise = loadData(asset);
+        }
+
+        promises.push(promise);
+      }
+
+      return Promise.all(promises);
+    },
+
+    // expose properties for testing
+    /* @if DEBUG */
+    _canUse: canUse
+    /* @endif */
+  };
+})();
+
+(function() {
+
+  class Animation {
+    /**
+     * Initialize properties on the animation.
+     * @memberof kontra.animation
+     * @private
+     *
+     * @param {object} properties - Properties of the animation.
+     * @param {object} properties.spriteSheet - Sprite sheet for the animation.
+     * @param {number[]} properties.frames - List of frames of the animation.
+     * @param {number}  properties.frameRate - Number of frames to display in one second.
+     * @param {boolean} [properties.loop=true] - If the animation should loop.
+     */
+    // @see https://github.com/jed/140bytes/wiki/Byte-saving-techniques#use-placeholder-arguments-instead-of-var
+    constructor(properties, frame) {
+      properties = properties || {};
+
+      this.spriteSheet = properties.spriteSheet;
+      this.frames = properties.frames;
+      this.frameRate = properties.frameRate;
+      this.loop = (properties.loop === undefined ? true : properties.loop);
+
+      frame = properties.spriteSheet.frame;
+      this.width = frame.width;
+      this.height = frame.height;
+      this.margin = frame.margin || 0;
+
+      // f = frame, a = accumulator
+      this._f = 0;
+      this._a = 0;
+    }
+
+    /**
+     * Clone an animation to be used more than once.
+     * @memberof kontra.animation
+     *
+     * @returns {object}
+     */
+    clone() {
+      return kontra.animation(this);
+    }
+
+    /**
+     * Reset an animation to the first frame.
+     * @memberof kontra.animation
+     */
+    reset() {
+      this._f = 0;
+      this._a = 0;
+    }
+
+    /**
+     * Update the animation. Used when the animation is not paused or stopped.
+     * @memberof kontra.animation
+     * @private
+     *
+     * @param {number} [dt=1/60] - Time since last update.
+     */
+    update(dt) {
+
+      // if the animation doesn't loop we stop at the last frame
+      if (!this.loop && this._f == this.frames.length-1) return;
+
+      dt = dt || 1 / 60;
+
+      this._a += dt;
+
+      // update to the next frame if it's time
+      while (this._a * this.frameRate >= 1) {
+        this._f = ++this._f % this.frames.length;
+        this._a -= 1 / this.frameRate;
+      }
+    }
+
+    /**
+     * Draw the current frame. Used when the animation is not stopped.
+     * @memberof kontra.animation
+     * @private
+     *
+     * @param {object} properties - How to draw the animation.
+     * @param {number} properties.x - X position to draw.
+     * @param {number} properties.y - Y position to draw.
+     * @param {Context} [properties.context=kontra.context] - Provide a context for the sprite to draw on.
+     */
+    render(properties) {
+      properties = properties || {};
+
+      // get the row and col of the frame
+      let row = this.frames[this._f] / this.spriteSheet._f | 0;
+      let col = this.frames[this._f] % this.spriteSheet._f | 0;
+
+      (properties.context || kontra.context).drawImage(
+        this.spriteSheet.image,
+        col * this.width + (col * 2 + 1) * this.margin,
+        row * this.height + (row * 2 + 1) * this.margin,
+        this.width, this.height,
+        properties.x, properties.y,
+        this.width, this.height
+      );
+    }
+  }
+
+  /**
+   * Single animation from a sprite sheet.
+   * @memberof kontra
+   *
+   * @param {object} properties - Properties of the animation.
+   * @param {object} properties.spriteSheet - Sprite sheet for the animation.
+   * @param {number[]} properties.frames - List of frames of the animation.
+   * @param {number}  properties.frameRate - Number of frames to display in one second.
+   */
+  kontra.animation = function(properties) {
+    return new Animation(properties);
+  };
+  kontra.animation.prototype = Animation.prototype;
+
+
+
+
+
+  class SpriteSheet {
+    /**
+     * Initialize properties on the spriteSheet.
+     * @memberof kontra
+     * @private
+     *
+     * @param {object} properties - Properties of the sprite sheet.
+     * @param {Image|Canvas} properties.image - Image for the sprite sheet.
+     * @param {number} properties.frameWidth - Width (in px) of each frame.
+     * @param {number} properties.frameHeight - Height (in px) of each frame.
+     * @param {number} properties.frameMargin - Margin (in px) between each frame.
+     * @param {object} properties.animations - Animations to create from the sprite sheet.
+     */
+    constructor(properties) {
+      properties = properties || {};
+
+      // @if DEBUG
+      if (!properties.image) {
+        throw Error('You must provide an Image for the SpriteSheet');
+      }
+      // @endif
+
+      this.animations = {};
+      this.image = properties.image;
+      this.frame = {
+        width: properties.frameWidth,
+        height: properties.frameHeight,
+        margin: properties.frameMargin
+      };
+
+      // f = framesPerRow
+      this._f = properties.image.width / properties.frameWidth | 0;
+
+      this.createAnimations(properties.animations);
+    }
+
+    /**
+     * Create animations from the sprite sheet.
+     * @memberof kontra.spriteSheet
+     *
+     * @param {object} animations - List of named animations to create from the Image.
+     * @param {number|string|number[]|string[]} animations.animationName.frames - A single frame or list of frames for this animation.
+     * @param {number} animations.animationName.frameRate - Number of frames to display in one second.
+     *
+     * @example
+     * let sheet = kontra.spriteSheet({image: img, frameWidth: 16, frameHeight: 16});
+     * sheet.createAnimations({
+     *   idle: {
+     *     frames: 1  // single frame animation
+     *   },
+     *   walk: {
+     *     frames: '2..6',  // ascending consecutive frame animation (frames 2-6, inclusive)
+     *     frameRate: 4
+     *   },
+     *   moonWalk: {
+     *     frames: '6..2',  // descending consecutive frame animation
+     *     frameRate: 4
+     *   },
+     *   jump: {
+     *     frames: [7, 12, 2],  // non-consecutive frame animation
+     *     frameRate: 3,
+     *     loop: false
+     *   },
+     *   attack: {
+     *     frames: ['8..10', 13, '10..8'],  // you can also mix and match, in this case frames [8,9,10,13,10,9,8]
+     *     frameRate: 2,
+     *     loop: false
+     *   }
+     * });
+     */
+    createAnimations(animations) {
+      let animation, frames, frameRate, sequence, name;
+
+      for (name in animations) {
+        animation = animations[name];
+        frames = animation.frames;
+
+        // array that holds the order of the animation
+        sequence = [];
+
+        // @if DEBUG
+        if (frames === undefined) {
+          throw Error('Animation ' + name + ' must provide a frames property');
+        }
+        // @endif
+
+        // add new frames to the end of the array
+        [].concat(frames).map(function(frame) {
+          sequence = sequence.concat(this._p(frame));
+        }, this);
+
+        this.animations[name] = kontra.animation({
+          spriteSheet: this,
+          frames: sequence,
+          frameRate: animation.frameRate,
+          loop: animation.loop
+        });
+      }
+    }
+
+    /**
+     * Parse a string of consecutive frames.
+     * @memberof kontra.spriteSheet
+     * @private
+     *
+     * @param {number|string} frames - Start and end frame.
+     *
+     * @returns {number[]} List of frames.
+     */
+    _p(consecutiveFrames, i) {
+      // @see https://github.com/jed/140bytes/wiki/Byte-saving-techniques#coercion-to-test-for-types
+      if (+consecutiveFrames === consecutiveFrames) {
+        return consecutiveFrames;
+      }
+
+      let sequence = [];
+      let frames = consecutiveFrames.split('..');
+
+      // coerce string to number
+      // @see https://github.com/jed/140bytes/wiki/Byte-saving-techniques#coercion-to-test-for-types
+      let start = i = +frames[0];
+      let end = +frames[1];
+
+      // ascending frame order
+      if (start < end) {
+        for (; i <= end; i++) {
+          sequence.push(i);
+        }
+      }
+      // descending order
+      else {
+        for (; i >= end; i--) {
+          sequence.push(i);
+        }
+      }
+
+      return sequence;
+    }
+  }
+
+  /**
+   * Create a sprite sheet from an image.
+   * @memberof kontra
+   *
+   * @param {object} properties - Properties of the sprite sheet.
+   * @param {Image|Canvas} properties.image - Image for the sprite sheet.
+   * @param {number} properties.frameWidth - Width (in px) of each frame.
+   * @param {number} properties.frameHeight - Height (in px) of each frame.
+   * @param {number} properties.frameMargin - Margin (in px) between each frame.
+   * @param {object} properties.animations - Animations to create from the sprite sheet.
+   */
+  kontra.spriteSheet = function(properties) {
+    return new SpriteSheet(properties);
+  };
+  kontra.spriteSheet.prototype = SpriteSheet.prototype;
 })();
