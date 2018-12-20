@@ -82,7 +82,7 @@ let loop = kontra.gameLoop({
           {
               let oldItem = terrain.shift();
               terrain.push(oldItem);
-              let oldIcicleItem = icicle.shift();
+              let oldIcicleItem = icicles.shift();
               icicles.push(oldIcicleItem);
               scrollIndex = 0;
           }
