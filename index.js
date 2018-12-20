@@ -11,6 +11,7 @@ Promise.resolve().then(async () => {
   let boom = kontra.assets.images.boom;
   await kontra.assets.load('sergei.gif')
   let dead = false;
+  let win = false;
   let sprite = kontra.sprite({
     x: 0,        // starting x,y position of the sprite
     y: (kontra.canvas.height/2),
@@ -53,6 +54,11 @@ Promise.resolve().then(async () => {
     let icicleBlockXEnd = (icicleBlockXOrig + 50);
     let icicleBlockYEnd = ((icicles[blockNumber]) * 50)
     let icicleBlockYStart = ((icicles[blockNumber+1]+1) * 50)
+	
+	let santaBlockXOrig = (blockNumber * 50);
+    let santaBlockXEnd = (santaBlockXOrig + 50);
+    let santaBlockYStart = (kontra.canvas.height - ((santas[blockNumber]+1) * 50))
+	let santaBlockY2Start = (kontra.canvas.height - ((santas[blockNumber+1]+1) * 50))
 
     if (targetY >= terrainBlockYEnd) {
       collision = true;
@@ -62,11 +68,17 @@ Promise.resolve().then(async () => {
       dead = true;
     };   
 
+	if (targetY-10 > santaBlockYStart || targetY-10 > santaBlockY2Start) {
+      if(!win) alert("Win");
+	  win = true;
+	  
+    };   
+	
     return collision;
   };
 
   let terrain = [0,1,2,3,2,3,4,5,4,3,2,0,0,1,3,5,0,0];
-  let icicles = [0,0,0,1,1,0,0,0,1,1,2,4,3,0,0,0,0,0];
+  let icicles = [0,0,0,1,1,0,0,0,1,1,2,3,2,0,0,0,0,0];
   let santas =  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1];
   //let terrain = [3,3,6,5,5,5,4,4,4,3,3,3,2,2,2,0];
   let ctx = kontra.canvas.getContext("2d");
