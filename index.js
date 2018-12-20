@@ -1,5 +1,7 @@
 kontra.init();
 kontra.assets.imagePath = './img/';
+kontra.assets.load('icicle.png').then(function(){
+let icicle = kontra.assets.images.icicle;
 kontra.assets.load('block.png').then(function(){
 let block = kontra.assets.images.block;
 kontra.assets.load('boom.png').then(function(){
@@ -55,6 +57,7 @@ let isCollision = function(targetX, targetY, terrain){
 };
 
 let terrain = [0,1,2,4,2,4,5,6,5,3,2,0,0,6,3,2];
+let icicles = [0,0,0,0,0,1,2,2,3,3,2,5,3,2,0,0];
 //let terrain = [3,3,6,5,5,5,4,4,4,3,3,3,2,2,2,0];
 let ctx = kontra.canvas.getContext("2d");
 let scrollIndex = 0;
@@ -78,7 +81,9 @@ let loop = kontra.gameLoop({
           if(scrollIndex % 50 == 0)
           {
               let oldItem = terrain.shift();
+			  let oldIcicleItem = icicle.shift();
               terrain.push(oldItem);
+			  icicles.push(oldIcicleItem);
               scrollIndex = 0;
           }
           let index = 0;
@@ -86,11 +91,17 @@ let loop = kontra.gameLoop({
             ctx.drawImage(block,(50*index) - scrollIndex,kontra.canvas.height - 50 * value,50,50*value);
             index++;
           };
+		  index = 0;
+          for (var value of icicles) {
+            ctx.drawImage(icicle,(50*index) - scrollIndex,0,50,50*value);
+            index++;
+          };
     sprite.render();
   }
 });
 
 loop.start();    // start the game
+});
 });
 });
 });
