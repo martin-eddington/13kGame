@@ -81,19 +81,15 @@ let loop = kontra.gameLoop({
           if(scrollIndex % 50 == 0)
           {
               let oldItem = terrain.shift();
-			  let oldIcicleItem = icicle.shift();
               terrain.push(oldItem);
-			  icicles.push(oldIcicleItem);
+              let oldIcicleItem = icicle.shift();
+              icicles.push(oldIcicleItem);
               scrollIndex = 0;
           }
           let index = 0;
           for (var value of terrain) {
             ctx.drawImage(block,(50*index) - scrollIndex,kontra.canvas.height - 50 * value,50,50*value);
-            index++;
-          };
-		  index = 0;
-          for (var value of icicles) {
-            ctx.drawImage(icicle,(50*index) - scrollIndex,0,50,50*value);
+            ctx.drawImage(icicle,(50*index) - scrollIndex,0,50,50*icicles[index]);
             index++;
           };
     sprite.render();
