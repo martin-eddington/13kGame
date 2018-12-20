@@ -11,7 +11,7 @@ Promise.resolve().then(async () => {
   let dead = false;
   let sprite = kontra.sprite({
     x: 0,        // starting x,y position of the sprite
-    y: 0,
+    y: (kontra.canvas.height/2),
     image: kontra.assets.images.sergei,
     //dx: 2,          // move the sprite 2px to the right every frame
     update: function() {
@@ -41,17 +41,23 @@ Promise.resolve().then(async () => {
   let isCollision = function(targetX, targetY, terrain){
     let blockNumber = parseInt((targetX + scrollIndex) / 50);
     let collision = false;
+
     let terrainBlockXOrig = (blockNumber * 50);
     let terrainBlockXEnd = (terrainBlockXOrig + 50);
     let terrainBlockYEnd = (kontra.canvas.height - ((terrain[blockNumber]+1) * 50))
     let terrainBlockYStart = (kontra.canvas.height - ((terrain[blockNumber+1]+1) * 50))
 
+    let icicleBlockXOrig = (blockNumber * 50);
+    let icicleBlockXEnd = (icicleBlockXOrig + 50);
+    let icicleBlockYEnd = ((icicles[blockNumber]+1) * 50)
+    let icicleBlockYStart = ((terrain[blockNumber+1]+1) * 50)
+
     if (targetY >= terrainBlockYEnd) {
-        collision = true;
+      collision = true;
     };
     
-    if (targetY-10 > (terrainBlockYStart)) {
-        dead = true;
+    if (targetY-10 > terrainBlockYStart){//} || targetY+10 < icicleBlockYStart) {
+      dead = true;
     };   
 
     return collision;
