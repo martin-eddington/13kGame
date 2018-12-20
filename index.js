@@ -1,6 +1,11 @@
 kontra.init();
 kontra.assets.imagePath = './img/';
+
+alert('santa has had too much festive ale and got lost in the forest again.'+
+'\n\nit is up to Super Sergei to save him!'+
+'\n\nuse cursor keys to fly')
 Promise.resolve().then(async () => {
+
   await kontra.assets.load('santa.png')
   let santa = kontra.assets.images.santa;
   await kontra.assets.load('icicle.png')
@@ -55,10 +60,10 @@ Promise.resolve().then(async () => {
     let icicleBlockYEnd = ((icicles[blockNumber]) * 50)
     let icicleBlockYStart = ((icicles[blockNumber+1]+1) * 50)
 	
-	let santaBlockXOrig = (blockNumber * 50);
+	  let santaBlockXOrig = (blockNumber * 50);
     let santaBlockXEnd = (santaBlockXOrig + 50);
     let santaBlockYStart = (kontra.canvas.height - ((santas[blockNumber]+1) * 50))
-	let santaBlockY2Start = (kontra.canvas.height - ((santas[blockNumber+1]+1) * 50))
+	  let santaBlockY2Start = (kontra.canvas.height - ((santas[blockNumber+1]+1) * 50))
 
     if (targetY >= terrainBlockYEnd) {
       collision = true;
@@ -71,7 +76,6 @@ Promise.resolve().then(async () => {
 	if (targetY-10 > santaBlockYStart || targetY-10 > santaBlockY2Start) {
       if(!win) alert("Win");
 	  win = true;
-	  
     };   
 	
     return collision;
@@ -89,6 +93,10 @@ Promise.resolve().then(async () => {
       if(dead) {
         sprite.image = boom;
         this.stop();
+        setTimeout(() => {
+          alert('you failed to save drunk santa,\n\ntry again so the kids get presents next year?')
+          location.reload()
+        }, 1000)
       };
       if (sprite.y <= (kontra.canvas.height - sprite.height)) {
         if(!isCollision(sprite.x, sprite.y+1, terrain)) {
@@ -119,6 +127,6 @@ Promise.resolve().then(async () => {
     }
   });
 
-
+  await new Promise(resolve => setTimeout(resolve, 1000))
   loop.start();    // start the game
 });
